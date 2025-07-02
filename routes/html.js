@@ -25,6 +25,7 @@ router.get('/:slug', async (req, res) => {
     }
 
     const html = generateHTML(data);
+    res.setHeader('Content-Type', 'text/html');
     res.send(html);
 
   } catch (err) {
@@ -35,18 +36,14 @@ router.get('/:slug', async (req, res) => {
 
 function generateHTML(data) {
   return `
-    <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
         <title>${data.title}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
           body {
-            font-family: system-ui, sans-serif;
-            padding: 20px;
-            margin: 0;
-            line-height: 1.6;
+            font-family: Arial, sans-serif;
+            padding: 40px;
             color: #1a1a1a;
           }
           h1, h2 {
@@ -56,13 +53,19 @@ function generateHTML(data) {
             max-width: 100%;
             border-radius: 8px;
           }
+          .section {
+            margin-bottom: 40px;
+          }
           .gallery {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
           }
-          .section {
-            margin-bottom: 40px;
+          .specs, .benefits, .features, .inclusions {
+            margin-top: 20px;
+          }
+          .spec-item, .benefit-item, .feature-block, .inclusion-item {
+            margin-bottom: 10px;
           }
         </style>
       </head>
