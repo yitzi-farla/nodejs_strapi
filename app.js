@@ -1,24 +1,27 @@
 const express = require('express');
 const path = require('path');
+
 const indexRouter = require('./routes/index');
+const pdfRouter = require('./routes/pdf');
 
 const app = express();
-const PORT = 3000;
+
+// Use Railway-assigned port if present, fallback to 3000 for local
+const PORT = process.env.PORT || 3000;
 
 // Serve static files from the "public" directory
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Use the router for handling routes
+// Route handlers
 app.use('/', indexRouter);
+app.use('/pdf', pdfRouter);
 
-// Catch-all route for handling 404 errors
-app.use((req, res, next) => {
-    res.status(404).sendFile(path.join(__dirname, 'views', '404.html'));
-  });
+// Catch-all 404 route
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(__dirname, 'views', '404.html'));
+});
 
+// Start server
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}/`);
 });
-
-const pdfRouter = require('./routes/pdf');
-app.use('/pdf', pdfRouter);
