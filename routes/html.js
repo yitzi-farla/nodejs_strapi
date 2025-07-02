@@ -1,146 +1,92 @@
 const express = require('express');
 const router = express.Router();
+const fetch = require('node-fetch');
 
-const STRAPI_URL = process.env.STRAPI_URL || process.env.URL || 'http://localhost:1337';
-const API_TOKEN = process.env.STRAPI_API_TOKEN;
+// Load from Railway-provided env vars
+const STRAPI_URL = process.env.STRAPI_URL;
+const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 router.get('/:slug', async (req, res) => {
-  const { slug } = req.params;
+  const slug = req.params.slug;
 
   try {
     const response = await fetch(
-      `${STRAPI_URL}/api/products?filters[slug][$eq]=${slug}&populate=deep`,
+      `${STRAPI_URL}/api/products?filters[slug][$eq]=${slug}&populate=*`,
       {
         headers: {
-          Authorization: `Bearer ${API_TOKEN}`
-        }
+          Authorization: `Bearer ${STRAPI_API_TOKEN}`,
+        },
       }
     );
 
-    const json = await response.json();
-    const data = json?.data?.[0]?.attributes;
+    if (!response.ok) {
+      console.error(`[ERROR] Strapi responded with status ${response.status}`);
+      return res.status(500).send('Failed to fetch product data');
+    }
 
-    if (!data) {
+    const data = await response.json();
+    const product = data.data[0];
+
+    if (!product) {
       return res.status(404).send('Product not found');
     }
 
-    const html = generateHTML(data);
-    res.setHeader('Content-Type', 'text/html');
-    res.send(html);
+    const attrs = product;
 
+    const title = attrs.ctaTitle || 'Product';
+    const summary = attrs.summary?.map(s =>
+      s.children.map(c => c.text).join(' ')
+    ).join('<br>') || '';
+
+    const heroImages = attrs.heroImages || [];
+    const specs = attrs.specs || [];
+
+    const specTable = specs.map(s => `<tr><td>${s.label}</td><td>${s.value}</td></tr>`).join('');
+
+    const galleryImgs = (attrs.gallery || [])
+      .map(img => `<img src="${STRAPI_URL}${img.url}" style="max-height:150px; margin: 10px;" />`)
+      .join('');
+
+    res.send(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            img { border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+            table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+
+          <p>${summary}</p>
+
+          <div>
+            ${heroImages
+              .map(
+                img => `<img src="${STRAPI_URL}${img.url}" alt="${img.name}" style="max-height:200px; margin: 10px;" />`
+              )
+              .join('')}
+          </div>
+
+          <h2>Specifications</h2>
+          <table>
+            <tbody>
+              ${specTable}
+            </tbody>
+          </table>
+
+          <h2>Gallery</h2>
+          <div>${galleryImgs}</div>
+        </body>
+      </html>
+    `);
   } catch (err) {
     console.error('[ERROR] Failed to generate HTML:', err);
     res.status(500).send('Error generating HTML');
   }
 });
-
-function generateHTML(data) {
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${data.title}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            line-height: 1.6;
-            color: #1a1a1a;
-          }
-          h1, h2 {
-            color: #1a1a1a;
-          }
-          img {
-            max-width: 100%;
-            border-radius: 8px;
-          }
-          .section {
-            margin-bottom: 40px;
-          }
-          .gallery {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-          }
-          .specs ul,
-          .inclusions ul {
-            list-style: none;
-            padding: 0;
-          }
-          .specs li,
-          .inclusions li {
-            margin-bottom: 6px;
-          }
-          .cta-button {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 10px 20px;
-            background: #007acc;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 4px;
-          }
-        </style>
-      </head>
-      <body>
-        <h1>${data.title}</h1>
-        <p>${data.summary || ''}</p>
-
-        ${data.heroImages?.data?.map(img => `<img src="${img.attributes.url}" alt="Hero Image" />`).join('') || ''}
-
-        ${data.features?.map(block => `
-          <div class="section feature-block">
-            <h2>${block.title}</h2>
-            <p>${block.description}</p>
-            ${block.image?.data ? `<img src="${block.image.data.attributes.url}" alt="Feature Image" />` : ''}
-          </div>
-        `).join('') || ''}
-
-        ${data.specs?.length ? `
-          <div class="section specs">
-            <h2>Specifications</h2>
-            <ul>
-              ${data.specs.map(item => `<li><strong>${item.label}:</strong> ${item.value}</li>`).join('')}
-            </ul>
-          </div>` : ''}
-
-        ${data.inclusions?.length ? `
-          <div class="section inclusions">
-            <h2>What's Included</h2>
-            <ul>
-              ${data.inclusions.map(i => `<li>${i.item}</li>`).join('')}
-            </ul>
-          </div>` : ''}
-
-        ${data.benefits?.length ? `
-          <div class="section benefits">
-            <h2>Key Benefits</h2>
-            ${data.benefits.map(i => `<p><strong>${i.title}:</strong> ${i.description}</p>`).join('')}
-          </div>` : ''}
-
-        ${data.gallery?.data?.length ? `
-          <div class="section gallery">
-            ${data.gallery.data.map(img => `<img src="${img.attributes.url}" alt="Gallery Image" />`).join('')}
-          </div>` : ''}
-
-        ${data.certificationNote ? `
-          <div class="section certification-note">
-            <p><strong>${data.certificationNote}</strong></p>
-          </div>` : ''}
-
-        ${data.ctaTitle ? `
-          <div class="section cta">
-            <h2>${data.ctaTitle}</h2>
-            <p>${data.ctaText}</p>
-            ${data.ctaButtonLabel && data.ctaButtonLink ? `
-              <a class="cta-button" href="${data.ctaButtonLink}">${data.ctaButtonLabel}</a>` : ''}
-          </div>` : ''}
-      </body>
-    </html>
-  `;
-}
 
 module.exports = router;
