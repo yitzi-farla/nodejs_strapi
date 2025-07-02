@@ -1,14 +1,20 @@
 const express = require('express');
 const router = express.Router();
 
-const STRAPI_URL = process.env.STRAPI_URL || 'http://localhost:1337';
+const STRAPI_URL = process.env.URL || 'http://localhost:1337';
+const API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 router.get('/:slug', async (req, res) => {
   const { slug } = req.params;
 
   try {
     const response = await fetch(
-      `${STRAPI_URL}/api/products?filters[slug][$eq]=${slug}&populate=deep`
+      `${STRAPI_URL}/api/products?filters[slug][$eq]=${slug}&populate=deep`,
+      {
+        headers: {
+          Authorization: `Bearer ${API_TOKEN}`
+        }
+      }
     );
 
     const json = await response.json();
@@ -19,49 +25,44 @@ router.get('/:slug', async (req, res) => {
     }
 
     const html = generateHTML(data);
-    res.setHeader('Content-Type', 'text/html');
     res.send(html);
 
   } catch (err) {
-    console.error('Error generating HTML:', err);
+    console.error(err);
     res.status(500).send('Error generating HTML');
   }
 });
 
 function generateHTML(data) {
   return `
+    <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
         <title>${data.title}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
         <style>
           body {
-            font-family: Arial, sans-serif;
-            padding: 40px;
+            font-family: system-ui, sans-serif;
+            padding: 20px;
+            margin: 0;
+            line-height: 1.6;
             color: #1a1a1a;
-            max-width: 800px;
-            margin: auto;
+          }
+          h1, h2 {
+            color: #1a1a1a;
           }
           img {
             max-width: 100%;
             border-radius: 8px;
-            margin-top: 10px;
-            margin-bottom: 10px;
-          }
-          .section {
-            margin-bottom: 40px;
           }
           .gallery {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
           }
-          .specs, .benefits, .features, .inclusions {
-            margin-top: 20px;
-          }
-          .spec-item, .benefit-item, .feature-block, .inclusion-item {
-            margin-bottom: 10px;
+          .section {
+            margin-bottom: 40px;
           }
         </style>
       </head>
