@@ -9,7 +9,7 @@ router.get('/:slug', async (req, res) => {
 
   try {
     const response = await fetch(
-      `${STRAPI_URL}/api/product-pages?filters[slug][$eq]=${slug}&populate=deep`
+      `${STRAPI_URL}/api/products?filters[slug][$eq]=${slug}&populate=deep`
     );
 
     const json = await response.json();
@@ -35,7 +35,7 @@ router.get('/:slug', async (req, res) => {
     res.send(pdf);
 
   } catch (err) {
-    console.error(err);
+    console.error('Error generating PDF:', err);
     res.status(500).send('Error generating PDF');
   }
 });
