@@ -2,14 +2,20 @@ const express = require('express');
 const router = express.Router();
 const puppeteer = require('puppeteer');
 
-const STRAPI_URL = process.env.STRAPI_URL || 'http://localhost:1337';
+const STRAPI_URL = process.env.URL || 'http://localhost:1337';
+const API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 router.get('/:slug', async (req, res) => {
   const { slug } = req.params;
 
   try {
     const response = await fetch(
-      `${STRAPI_URL}/api/products?filters[slug][$eq]=${slug}&populate=deep`
+      `${STRAPI_URL}/api/products?filters[slug][$eq]=${slug}&populate=deep`,
+      {
+        headers: {
+          Authorization: `Bearer ${API_TOKEN}`
+        }
+      }
     );
 
     const json = await response.json();
@@ -35,7 +41,7 @@ router.get('/:slug', async (req, res) => {
     res.send(pdf);
 
   } catch (err) {
-    console.error('Error generating PDF:', err);
+    console.error(err);
     res.status(500).send('Error generating PDF');
   }
 });
