@@ -3,6 +3,7 @@ const path = require('path');
 
 const indexRouter = require('./routes/index');
 const pdfRouter = require('./routes/pdf');
+const htmlRouter = require('./routes/html');
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Route handlers
 app.use('/', indexRouter);
 app.use('/pdf', pdfRouter);
+app.use('/html', htmlRouter);
 
 // Catch-all 404 route
 app.use((req, res) => {
