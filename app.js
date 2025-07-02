@@ -1,21 +1,33 @@
 const express = require('express');
-const path = require('path');
-const indexRouter = require('./routes/index');
+const puppeteer = require('puppeteer');
+const axios = require('axios');
 
 const app = express();
-const PORT = 3000;
 
-// Serve static files from the "public" directory
-app.use(express.static(path.join(__dirname, 'public')));
+app.get('/pdf/:slug', async (req, res) => {
+  const slug = req.params.slug;
+  const apiUrl = `https://your-strapi-url/api/product-pages?filters[slug][$eq]=${slug}&populate=deep`;
 
-// Use the router for handling routes
-app.use('/', indexRouter);
+  const { data } = await axios.get(apiUrl);
+  const product = data.data[0].attributes;
 
-// Catch-all route for handling 404 errors
-app.use((req, res, next) => {
-    res.status(404).sendFile(path.join(__dirname, 'views', '404.html'));
-  });
+  const html = generateHTML(product); // same as your existing Shopify generator
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/`);
+  const browser = await puppeteer.launch({ headless: 'new' });
+  const page = await browser.newPage();
+  await page.setContent(html, { waitUntil: 'networkidle0' });
+
+  const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
+  await browser.close();
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename=${slug}.pdf`);
+  res.send(pdfBuffer);
 });
+
+app.listen(3000, () => console.log("PDF generator running on port 3000"));
+
+function generateHTML(p) {
+  // Reuse your Shopify HTML logic here.
+  return `<html><body><h1>${p.title}</h1><p>${p.summary}</p></body></html>`;
+}
