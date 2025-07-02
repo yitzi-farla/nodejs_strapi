@@ -19,3 +19,6 @@ app.use((req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}/`);
 });
+
+const pdfRouter = require('./routes/pdf');
+app.use('/pdf', pdfRouter);
