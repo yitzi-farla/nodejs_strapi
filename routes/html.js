@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
-const STRAPI_URL = process.env.URL || 'http://localhost:1337';
-const API_TOKEN = process.env.STRAPI_API_TOKEN;
+const STRAPI_URL = process.env.STRAPI_URL || 'http://localhost:1337';
+const STRAPI_API_TOKEN = process.env.STRAPI_API_TOKEN;
 
 router.get('/:slug', async (req, res) => {
   const { slug } = req.params;
@@ -12,12 +12,16 @@ router.get('/:slug', async (req, res) => {
       `${STRAPI_URL}/api/products?filters[slug][$eq]=${slug}&populate=deep`,
       {
         headers: {
-          Authorization: `Bearer ${API_TOKEN}`
+          Authorization: `Bearer ${STRAPI_API_TOKEN}`
         }
       }
     );
 
     const json = await response.json();
+
+    console.log('[DEBUG] Strapi response for slug:', slug);
+    console.dir(json, { depth: null });
+
     const data = json?.data?.[0]?.attributes;
 
     if (!data) {
@@ -29,7 +33,7 @@ router.get('/:slug', async (req, res) => {
     res.send(html);
 
   } catch (err) {
-    console.error(err);
+    console.error('[ERROR] Failed to generate HTML:', err);
     res.status(500).send('Error generating HTML');
   }
 });
