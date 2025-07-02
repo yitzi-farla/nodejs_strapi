@@ -3,8 +3,8 @@ const puppeteer = require('puppeteer');
 const axios = require('axios');
 const router = express.Router();
 
-// 1. Your Railway Strapi URL (update this)
-const STRAPI_BASE = 'https://your-strapi.railway.app';
+// Use environment variable from Railway (in .env or Railway's UI)
+const STRAPI_BASE = process.env.URL || 'https://strapi-production-a5ea.up.railway.app';
 const API = `${STRAPI_BASE}/api/product-pages?populate=deep`;
 
 router.get('/:slug', async (req, res) => {
